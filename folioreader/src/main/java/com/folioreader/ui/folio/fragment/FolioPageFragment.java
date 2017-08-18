@@ -1,6 +1,7 @@
 package com.folioreader.ui.folio.fragment;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
@@ -8,6 +9,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.ContentLoadingProgressBar;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -29,6 +31,7 @@ import com.folioreader.Config;
 import com.folioreader.Constants;
 import com.folioreader.R;
 import com.folioreader.model.Highlight;
+import com.folioreader.model.event.AnchorIdEvent;
 import com.folioreader.model.event.MediaOverlayHighlightStyleEvent;
 import com.folioreader.model.event.MediaOverlayPlayPauseEvent;
 import com.folioreader.model.event.MediaOverlaySpeedEvent;
@@ -90,6 +93,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
     private WebViewPosition mWebviewposition;
     private String mHtmlString = null;
     private boolean hasMediaOverlay = false;
+    private String mAnchorId;
 
     public interface FolioPageFragmentCallback {
 
@@ -100,6 +104,8 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
         void setPagerToPosition(String href);
 
         void setLastWebViewPosition(int position);
+
+        void goToChapter(String href);
     }
 
     private View mRootView;
@@ -176,6 +182,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
         initAnimations();
         initWebView();
         updatePagesLeftTextBg();
+
         return mRootView;
     }
 
@@ -269,6 +276,27 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
             mLastWebviewScrollpos = mWebview.getScrollY();
             mIsPageReloaded = true;
             setHtml(true);
+            updatePagesLeftTextBg();
+        }
+    }
+
+    /**
+     * [EVENT BUS FUNCTION]
+     * Function triggered from {@link FolioActivity#onActivityResult(int, int, Intent)} when any item in toc clicked.
+     *
+     * @param event of type {@link AnchorIdEvent} contains selected chapter href.
+     */
+    @Subscribe
+    public void jumpToAnchorPoint(AnchorIdEvent event) {
+        if(isAdded()) {
+            if(event != null && event.getHref() != null) {
+                String href = event.getHref();
+                if (href != null && href.indexOf('#') != -1) {
+                    if (spineItem.href.equals(href.substring(0, href.lastIndexOf('#')))) {
+                        mAnchorId = href.substring(href.lastIndexOf('#') + 1);
+                    }
+                }
+            }
         }
     }
 
@@ -347,6 +375,8 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
             @Override
             public void onPageFinished(WebView view, String url) {
                 if (isAdded()) {
+                    if(mAnchorId != null)
+                        view.loadUrl("javascript:document.getElementById(\"" + mAnchorId + "\").scrollIntoView()");
                     view.loadUrl("javascript:alert(getReadingTime())");
                     if (!hasMediaOverlay) {
                         view.loadUrl("javascript:alert(wrappingSentencesWithinPTags())");
@@ -393,6 +423,8 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
                     } else {
                         if (url.contains("storage")) {
                             mActivityCallback.setPagerToPosition(url);
+                        } else if (url.endsWith(".xhtml") || url.endsWith(".html")){
+                            mActivityCallback.goToChapter(url);
                         } else {
                             // Otherwise, give the default behavior (open in browser)
                             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
@@ -503,10 +535,10 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
 
     private void updatePagesLeftText(int scrollY) {
         try {
-            int currentPage = (int) (Math.ceil((double) scrollY / mWebview.getWebviewHeight()) + 1);
+            int currentPage = (int) (Math.ceil((double) scrollY / mWebview.getWebViewHeight()) + 1);
             int totalPages =
                     (int) Math.ceil((double) mWebview.getContentHeightVal()
-                            / mWebview.getWebviewHeight());
+                            / mWebview.getWebViewHeight());
             int pagesRemaining = totalPages - currentPage;
             String pagesRemainingStrFormat =
                     pagesRemaining > 1 ?
@@ -546,6 +578,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
 
             @Override
             public void onAnimationEnd(Animation animation) {
+                fadeOutSeekBarIfVisible();
             }
 
             @Override
@@ -572,21 +605,14 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
         });
     }
 
-    private Runnable mHideSeekbarRunnable = new Runnable() {
-        @Override
-        public void run() {
-            fadeoutSeekbarIfVisible();
-        }
-    };
-
-    public void fadeInSeekbarIfInvisible() {
+    public void fadeInSeekBarIfInvisible() {
         if (mScrollSeekbar.getVisibility() == View.INVISIBLE ||
                 mScrollSeekbar.getVisibility() == View.GONE) {
             mScrollSeekbar.startAnimation(mFadeInAnimation);
         }
     }
 
-    private void fadeoutSeekbarIfVisible() {
+    public void fadeOutSeekBarIfVisible() {
         if (mScrollSeekbar.getVisibility() == View.VISIBLE) {
             mScrollSeekbar.startAnimation(mFadeOutAnimation);
         }
@@ -789,7 +815,7 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
     @JavascriptInterface
     public void getHighlightJson(String mJsonResponse) {
         if (mJsonResponse != null) {
-            mHighlightMap = AppUtil.stringToJsonMap(mJsonResponse);
+            mHighlightMap = AppUtil.toMap(mJsonResponse);
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -855,6 +881,12 @@ public class FolioPageFragment extends Fragment implements HtmlTaskCallback, Med
         if (isCurrentFragment()) {
             mWebview.loadUrl("javascript:alert(rewindCurrentIndex())");
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if(mWebview != null) mWebview.destroy();
     }
 
     private boolean isCurrentFragment() {

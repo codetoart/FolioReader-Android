@@ -29,16 +29,20 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Html;
 import android.view.View;
+import android.view.animation.AccelerateInterpolator;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.animation.DecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.folioreader.Config;
 import com.folioreader.Constants;
 import com.folioreader.R;
 import com.folioreader.model.Highlight;
+import com.folioreader.model.event.AnchorIdEvent;
 import com.folioreader.model.event.MediaOverlayHighlightStyleEvent;
 import com.folioreader.model.event.MediaOverlayPlayPauseEvent;
 import com.folioreader.model.event.MediaOverlaySpeedEvent;
@@ -112,6 +116,7 @@ public class FolioActivity
 
     private Animation slide_down;
     private Animation slide_up;
+    private boolean mIsNightMode;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -167,6 +172,13 @@ public class FolioActivity
                 isOpen = !isOpen;
             }
         });
+
+        mIsNightMode = Config.getConfig().isNightMode();
+        if (mIsNightMode) {
+            mToolbar.setBackgroundColor(ContextCompat.getColor(FolioActivity.this, R.color.black));
+            title.setTextColor(ContextCompat.getColor(FolioActivity.this, R.color.white));
+            audioContainer.setBackgroundColor(ContextCompat.getColor(FolioActivity.this, R.color.night));
+        }
     }
 
     private void initBook(String mEpubFileName, int mEpubRawId, String mEpubFilePath, EpubSourceType mEpubSourceType) {
@@ -295,7 +307,7 @@ public class FolioActivity
         if (mIsActionBarVisible) {
             toolbarAnimateHide();
         } else {
-            toolbarAnimateShow(1);
+            toolbarAnimateShow();
         }
     }
 
@@ -315,48 +327,29 @@ public class FolioActivity
         this.mWebViewScrollPosition = position;
     }
 
-    private void toolbarAnimateShow(final int verticalOffset) {
-        mToolbar.animate()
-                .translationY(0)
-                .setInterpolator(new LinearInterpolator())
-                .setDuration(180)
-                .setListener(new AnimatorListenerAdapter() {
-
-                    @Override
-                    public void onAnimationStart(Animator animation) {
-                        toolbarSetElevation(verticalOffset == 0 ? 0 : 1);
-                    }
-                });
-
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (mIsActionBarVisible) {
-                            toolbarAnimateHide();
-                        }
-                    }
-                });
+    @Override
+    public void goToChapter(String href) {
+        href = href.substring(href.indexOf(EPUB_TITLE + "/") + EPUB_TITLE.length() + 1);
+        for (Link spine : mSpineReferenceList) {
+            if (spine.href.contains(href)) {
+                mChapterPosition = mSpineReferenceList.indexOf(spine);
+                mFolioPageViewPager.setCurrentItem(mChapterPosition);
+                title.setText(spine.getChapterTitle());
+                break;
             }
-        }, 10000);
+        }
+    }
 
-        mIsActionBarVisible = true;
+    private void toolbarAnimateShow() {
+        if (!mIsActionBarVisible) {
+            mToolbar.animate().translationY(0).setInterpolator(new DecelerateInterpolator(2)).start();
+            mIsActionBarVisible = true;
+        }
     }
 
     private void toolbarAnimateHide() {
-        mToolbar.animate()
-                .translationY(-mToolbar.getHeight())
-                .setInterpolator(new LinearInterpolator())
-                .setDuration(180)
-                .setListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        toolbarSetElevation(0);
-                    }
-                });
         mIsActionBarVisible = false;
+        mToolbar.animate().translationY(-mToolbar.getHeight()).setInterpolator(new AccelerateInterpolator(2)).start();
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -377,11 +370,13 @@ public class FolioActivity
 
             String type = data.getStringExtra(TYPE);
             if (type.equals(CHAPTER_SELECTED)) {
+                String selectedChapterHref = data.getStringExtra(SELECTED_CHAPTER_POSITION);
                 for (Link spine : mSpineReferenceList) {
-                    if (spine.href.contains(data.getStringExtra(SELECTED_CHAPTER_POSITION))) {
+                    if (selectedChapterHref.contains(spine.href)) {
                         mChapterPosition = mSpineReferenceList.indexOf(spine);
                         mFolioPageViewPager.setCurrentItem(mChapterPosition);
                         title.setText(data.getStringExtra(BOOK_TITLE));
+                        BUS.post(new AnchorIdEvent(selectedChapterHref));
                         break;
                     }
                 }
@@ -535,7 +530,7 @@ public class FolioActivity
                 mOneSpeed.setSelected(false);
                 mOneAndHalfSpeed.setSelected(false);
                 mTwoSpeed.setSelected(true);
-                FolioActivity.BUS.post(MediaOverlaySpeedEvent.Speed.TWO);
+                FolioActivity.BUS.post(new MediaOverlaySpeedEvent(MediaOverlaySpeedEvent.Speed.TWO));
             }
         });
 
