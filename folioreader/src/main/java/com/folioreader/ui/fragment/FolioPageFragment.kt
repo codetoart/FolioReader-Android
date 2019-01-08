@@ -83,7 +83,7 @@ class FolioPageFragment : Fragment(),
     }
 
     private lateinit var uiHandler: Handler
-    private var mHtmlString: String? = null
+    private var rawHtml: String = ""
     private val hasMediaOverlay = false
     private var mAnchorId: String? = null
     private var rangy = ""
@@ -289,7 +289,7 @@ class FolioPageFragment : Fragment(),
 
     override fun onReceiveHtml(html: String) {
         if (isAdded) {
-            mHtmlString = html
+            rawHtml = html
             setHtml(false)
         }
     }
@@ -297,7 +297,7 @@ class FolioPageFragment : Fragment(),
     private fun setHtml(reloaded: Boolean) {
         if (spineItem != null) {
             /*if (!reloaded && spineItem.properties.contains("media-overlay")) {
-                mediaController.setSMILItems(SMILParser.parseSMIL(mHtmlString));
+                mediaController.setSMILItems(SMILParser.parseSMIL(rawHtml));
                 mediaController.setUpMediaPlayer(spineItem.mediaOverlay, spineItem.mediaOverlay.getAudioPath(spineItem.href), mBookTitle);
             }*/
             mConfig = AppUtil.getSavedConfig(context)
@@ -319,7 +319,7 @@ class FolioPageFragment : Fragment(),
             uiHandler.post {
                 folioWebView.loadDataWithBaseURL(
                     mActivityCallback?.streamerUrl + path,
-                    HtmlUtil.getHtmlContent(context!!, mHtmlString, mConfig!!),
+                    HtmlUtil.getHtmlContent(context!!, rawHtml, mConfig!!),
                     mimeType,
                     "UTF-8", null
                 )
