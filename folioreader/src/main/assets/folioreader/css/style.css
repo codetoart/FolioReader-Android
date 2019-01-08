@@ -1,5 +1,5 @@
 /**
- *  Style.css
+ *  style.css
  *  FolioReaderKit
  *
  *  Created by Heberti Almeida on 06/05/15.
@@ -231,22 +231,22 @@ html.nightMode .highlight_underline {border-bottom: 2px solid rgba(240, 40, 20, 
 
 @font-face {
     font-family: 'andada';
-    src: url('file:///android_asset/fonts/andada/Andada-Regular.otf');
+    src: url('file:///android_asset/folioreader/fonts/andada/Andada-Regular.otf');
 }
 
 @font-face {
     font-family: 'lato';
-    src: url('file:///android_asset/fonts/lato/Lato-Regular.ttf');
+    src: url('file:///android_asset/folioreader/fonts/lato/Lato-Regular.ttf');
 }
 
 @font-face {
     font-family: 'lora';
-    src: url('file:///android_asset/fonts/lora/Lora-Regular.ttf');
+    src: url('file:///android_asset/folioreader/fonts/lora/Lora-Regular.ttf');
 }
 
 @font-face {
     font-family: 'raleway';
-    src: url('file:///android_asset/fonts/raleway/Raleway-Regular.ttf');
+    src: url('file:///android_asset/folioreader/fonts/raleway/Raleway-Regular.ttf');
 }
 
 .andada {

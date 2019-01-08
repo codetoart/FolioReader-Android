@@ -168,7 +168,7 @@ public class FolioReader {
             intent.putExtra(FolioActivity.INTENT_EPUB_SOURCE_PATH, rawId);
             intent.putExtra(FolioActivity.INTENT_EPUB_SOURCE_TYPE,
                     FolioActivity.EpubSourceType.RAW);
-        } else if (assetOrSdcardPath.contains(Constants.ASSET)) {
+        } else if (assetOrSdcardPath.contains(Constants.ASSETS_PATH)) {
             intent.putExtra(FolioActivity.INTENT_EPUB_SOURCE_PATH, assetOrSdcardPath);
             intent.putExtra(FolioActivity.INTENT_EPUB_SOURCE_TYPE,
                     FolioActivity.EpubSourceType.ASSETS);

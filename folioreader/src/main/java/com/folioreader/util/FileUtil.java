@@ -36,7 +36,7 @@ public class FileUtil {
                     saveTempEpubFile(filePath, epubFileName, epubInputStream);
                 } else if (epubSourceType.equals(FolioActivity.EpubSourceType.ASSETS)) {
                     AssetManager assetManager = context.getAssets();
-                    epubFilePath = epubFilePath.replaceAll(Constants.ASSET, "");
+                    epubFilePath = epubFilePath.replaceAll(Constants.ASSETS_PATH, "");
                     epubInputStream = assetManager.open(epubFilePath);
                     saveTempEpubFile(filePath, epubFileName, epubInputStream);
                 } else {

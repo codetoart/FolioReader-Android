@@ -26,7 +26,7 @@ public class Constants {
     public static final int FONT_LORA = 3;
     public static final int FONT_RALEWAY = 4;
     public static final String DATE_FORMAT = "MMM dd, yyyy | HH:mm";
-    public static final String ASSET = "file:///android_asset/";
+    public static final String ASSETS_PATH = "file:///android_asset/";
     public static final int WRITE_EXTERNAL_STORAGE_REQUEST = 102;
     public static final String CHAPTER_ID = "id";
     public static final String HREF = "href";
