@@ -23,22 +23,6 @@ var DisplayUnit = Object.freeze({
 
 var viewportRect;
 
-// Class manipulation
-function hasClass(ele, cls) {
-    return !!ele.className.match(new RegExp('(\\s|^)' + cls + '(\\s|$)'));
-}
-
-function addClass(ele, cls) {
-    if (!hasClass(ele, cls)) ele.className += " " + cls;
-}
-
-function removeClass(ele, cls) {
-    if (hasClass(ele, cls)) {
-        var reg = new RegExp('(\\s|^)' + cls + '(\\s|$)');
-        ele.className = ele.className.replace(reg, ' ');
-    }
-}
-
 // Menu colors
 function setHighlightStyle(style) {
     Highlight.getUpdatedHighlightId(thisHighlight.id, style);
@@ -58,19 +42,6 @@ function getHighlightContent() {
     return thisHighlight.textContent
 }
 
-function getBodyText() {
-    return document.body.innerText;
-}
-
-// Method that gets the Rect of current selected text
-// and returns in a JSON format
-var getRectForSelectedText = function (elm) {
-    if (typeof elm === "undefined") elm = window.getSelection().getRangeAt(0);
-
-    var rect = elm.getBoundingClientRect();
-    return "{{" + rect.left + "," + rect.top + "}, {" + rect.width + "," + rect.height + "}}";
-};
-
 // Reading time
 function getReadingTime() {
     var text = document.body.innerText;
@@ -80,10 +51,6 @@ function getReadingTime() {
     var readingTimeMinutes = Math.round(totalReadingTimeSeconds / 60);
 
     return readingTimeMinutes;
-}
-
-function scrollAnchor(id) {
-    window.location.hash = id;
 }
 
 /**
@@ -209,279 +176,6 @@ function getSentenceWithIndex(className) {
     sentence.classList.add(className);
     return text;
 }
-
-$(function () {
-    window.ssReader = Class({
-        $singleton: true,
-
-        init: function () {
-            rangy.init();
-
-            this.highlighter = rangy.createHighlighter();
-
-            this.highlighter.addClassApplier(rangy.createClassApplier("highlight_yellow", {
-                ignoreWhiteSpace: true,
-                tagNames: ["span", "a"]
-            }));
-
-            this.highlighter.addClassApplier(rangy.createClassApplier("highlight_green", {
-                ignoreWhiteSpace: true,
-                tagNames: ["span", "a"]
-            }));
-
-            this.highlighter.addClassApplier(rangy.createClassApplier("highlight_blue", {
-                ignoreWhiteSpace: true,
-                tagNames: ["span", "a"]
-            }));
-
-            this.highlighter.addClassApplier(rangy.createClassApplier("highlight_pink", {
-                ignoreWhiteSpace: true,
-                tagNames: ["span", "a"]
-            }));
-
-            this.highlighter.addClassApplier(rangy.createClassApplier("highlight_underline", {
-                ignoreWhiteSpace: true,
-                tagNames: ["span", "a"]
-            }));
-
-        },
-
-        setFontAndada: function () {
-            this.setFont("andada");
-        },
-
-        setFontLato: function () {
-            this.setFont("lato");
-        },
-
-        setFontPtSerif: function () {
-            this.setFont("pt-serif");
-        },
-
-        setFontPtSans: function () {
-            this.setFont("pt-sans");
-        },
-
-        base64encode: function (str) {
-            return btoa(unescape(encodeURIComponent(str)));
-        },
-
-        base64decode: function (str) {
-            return decodeURIComponent(escape(atob(str)));
-        },
-
-        clearSelection: function () {
-            if (window.getSelection) {
-                if (window.getSelection().empty) {  // Chrome
-                    window.getSelection().empty();
-                } else if (window.getSelection().removeAllRanges) {  // Firefox
-                    window.getSelection().removeAllRanges();
-                }
-            } else if (document.selection) {  // IE?
-                document.selection.empty();
-            }
-        },
-
-        // Public methods
-
-        setFont: function (fontName) {
-            $("#ss-wrapper-font").removeClass().addClass("ss-wrapper-" + fontName);
-        },
-
-        setSize: function (size) {
-            $("#ss-wrapper-size").removeClass().addClass("ss-wrapper-" + size);
-        },
-
-        setTheme: function (theme) {
-            $("body, #ss-wrapper-theme").removeClass().addClass("ss-wrapper-" + theme);
-        },
-
-        setComment: function (comment, inputId) {
-            $("#" + inputId).val(ssReader.base64decode(comment));
-            $("#" + inputId).trigger("input", ["true"]);
-        },
-
-        highlightSelection: function (color) {
-            try {
-
-                this.highlighter.highlightSelection(color, null);
-                var range = window.getSelection().toString();
-                var params = {content: range, rangy: this.getHighlights(), color: color};
-                this.clearSelection();
-                Highlight.onReceiveHighlights(JSON.stringify(params));
-            } catch (err) {
-                console.log("highlightSelection : " + err);
-            }
-        },
-
-        unHighlightSelection: function () {
-            try {
-                this.highlighter.unhighlightSelection();
-                Highlight.onReceiveHighlights(this.getHighlights());
-            } catch (err) {
-            }
-        },
-
-        getHighlights: function () {
-            try {
-                return this.highlighter.serialize();
-            } catch (err) {
-            }
-        },
-
-        setHighlights: function (serializedHighlight) {
-            try {
-                this.highlighter.removeAllHighlights();
-                this.highlighter.deserialize(serializedHighlight);
-            } catch (err) {
-            }
-        },
-
-        removeAll: function () {
-            try {
-                this.highlighter.removeAllHighlights();
-            } catch (err) {
-            }
-        },
-
-        copy: function () {
-            SSBridge.onCopy(window.getSelection().toString());
-            this.clearSelection();
-        },
-
-        share: function () {
-            SSBridge.onShare(window.getSelection().toString());
-            this.clearSelection();
-        },
-
-        search: function () {
-            SSBridge.onSearch(window.getSelection().toString());
-            this.clearSelection();
-        }
-    });
-
-    if (typeof ssReader !== "undefined") {
-        ssReader.init();
-    }
-
-    $(".verse").click(function () {
-        SSBridge.onVerseClick(ssReader.base64encode($(this).attr("verse")));
-    });
-
-    $("code").each(function (i) {
-        var textarea = $("<textarea class='textarea'/>").attr("id", "input-" + i).on("input propertychange", function (event, isInit) {
-            $(this).css({'height': 'auto', 'overflow-y': 'hidden'}).height(this.scrollHeight);
-            $(this).next().css({'height': 'auto', 'overflow-y': 'hidden'}).height(this.scrollHeight);
-
-            if (!isInit) {
-                var that = this;
-                if (timeout !== null) {
-                    clearTimeout(timeout);
-                }
-                timeout = setTimeout(function () {
-                    SSBridge.onCommentsClick(
-                        ssReader.base64encode($(that).val()),
-                        $(that).attr("id")
-                    );
-                }, 1000);
-            }
-        });
-        var border = $("<div class='textarea-border' />");
-        var container = $("<div class='textarea-container' />");
-
-        $(textarea).appendTo(container);
-        $(border).appendTo(container);
-
-        $(this).after(container);
-    });
-});
-
-function array_diff(array1, array2) {
-    var difference = $.grep(array1, function (el) {
-        return $.inArray(el, array2) < 0
-    });
-    return difference.concat($.grep(array2, function (el) {
-        return $.inArray(el, array1) < 0
-    }));
-    ;
-}
-
-//For testing purpose only
-function sleep(seconds) {
-    var e = new Date().getTime() + (seconds * 1000);
-    while (new Date().getTime() <= e) {
-    }
-}
-
-// Mock objects for testing purpose
-/*var FolioPageFragment = {
-
-    setHorizontalPageCount : function(pageCount) {
-        console.warn("-> Mock call to FolioPageFragment.setHorizontalPageCount(" + pageCount + ")");
-    },
-
-    storeFirstVisibleSpan : function(usingId, value) {
-        console.warn("-> Mock call to FolioPageFragment.storeFirstVisibleSpan(" + usingId + ", " + value + ")");
-    },
-
-    getDirection : function() {
-        //var direction = Direction.VERTICAL;
-        var direction = Direction.HORIZONTAL;
-        console.warn("-> Mock call to FolioPageFragment.getDirection(), return " + direction);
-        return direction;
-    },
-
-    getTopDistraction : function() {
-        console.warn("-> Mock call to FolioPageFragment.getTopDistraction(), return " + 0);
-        return 0;
-    },
-
-    getBottomDistraction : function() {
-        console.warn("-> Mock call to FolioPageFragment.getBottomDistraction(), return " + 0);
-        return 0;
-    }
-};
-
-var FolioWebView = {
-
-    setCompatMode : function(compatMode) {
-        console.warn("-> Mock call to FolioWebView.setCompatMode(" + compatMode + ")");
-    }
-};
-
-var WebViewPager = {
-
-    setCurrentPage : function(pageIndex) {
-        console.warn("-> Mock call to WebViewPager.setCurrentPage(" + pageIndex + ")");
-    },
-
-    setPageToLast : function() {
-        console.warn("-> Mock call to WebViewPager.setPageToLast()");
-    },
-
-    setPageToFirst : function() {
-        console.warn("-> Mock call to WebViewPager.setPageToFirst()");
-    }
-};
-
-var LoadingView = {
-
-    show : function() {
-        console.warn("-> Mock call to LoadingView.show()");
-    },
-
-    hide : function() {
-        console.warn("-> Mock call to LoadingView.hide()");
-    },
-
-    visible : function() {
-        console.warn("-> Mock call to LoadingView.visible()");
-    },
-
-    invisible : function() {
-        console.warn("-> Mock call to LoadingView.invisible()");
-    }
-};*/
 
 function goToHighlight(highlightId) {
     var element = document.getElementById(highlightId.toString());
@@ -659,8 +353,8 @@ function highlightSearchLocator(rangeCfi) {
 
 /**
  * Returns JSON of selection rect
- * @param {Element} [element]
- * @returns {object} JSON of {@link DOMRect}
+ * @param {(Element|undefined)} [element]
+ * @returns {Object} JSON of {@link DOMRect}
  */
 function getSelectionRect(element) {
     console.log("-> getSelectionRect");
@@ -705,7 +399,7 @@ function deleteThisHighlight() {
 function onTextSelectionItemClicked(id) {
     var selectionType = window.getSelection().type;
     var selectedText = "";
-    if (selectionType == "Range") {
+    if (selectionType === "Range") {
         selectedText = window.getSelection().toString();
     } else {
         selectedText = thisHighlight.textContent;
@@ -737,11 +431,6 @@ function computeLastReadCfi() {
     cfi = EPUBcfi.Generator.generateCompleteCFI("/0!", cfi);
     viewportRect = null;
     FolioPageFragment.storeLastReadCfi(cfi);
-}
-
-function constructDOMRect(rectJsonString) {
-    var rectJson = JSON.parse(rectJsonString);
-    return new DOMRect(rectJson.x, rectJson.y, rectJson.width, rectJson.height);
 }
 
 /**

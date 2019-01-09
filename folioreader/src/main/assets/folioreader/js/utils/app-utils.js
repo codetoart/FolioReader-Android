@@ -44,8 +44,25 @@ function isClickInsideElement(event, element) {
  * Return true if x, y coordinates inside rect bounds.
  * @param {number} x
  * @param {number} y
- * @param {ClientRect | DOMRect} rect
+ * @param {(ClientRect|DOMRect)} rect
  */
 function isPointInRect(x, y, rect) {
     return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+}
+
+//For testing purpose only
+function sleep(seconds) {
+    var e = new Date().getTime() + (seconds * 1000);
+    while (new Date().getTime() <= e) {
+    }
+}
+
+/**
+ * Constructs DOMRect object from json string representation of DOMRect
+ * @param {string} rectJsonString
+ * @return {DOMRect}
+ */
+function constructDOMRect(rectJsonString) {
+    var rectJson = JSON.parse(rectJsonString);
+    return new DOMRect(rectJson.x, rectJson.y, rectJson.width, rectJson.height);
 }

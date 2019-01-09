@@ -1,4 +1,3 @@
-var scrollWidth;
 var horizontalInterval;
 var horizontalIntervalPeriod = 1000;
 var horizontalIntervalCounter = 0;
